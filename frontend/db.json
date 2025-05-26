@@ -1,13 +1,7 @@
 {
   "todos": [
     {
-      "id": 1,
-      "text": "初めてのTodo",
-      "completed": false,
-      "date": "2025-05-25"
-    },
-    {
-      "id": 2,
+      "id": "2",
       "text": "2番目のTodo",
       "completed": true,
       "date": "2025-05-24"
