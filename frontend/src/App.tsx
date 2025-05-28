@@ -10,6 +10,7 @@ interface Todos {
   id?: number;
   text: string | null;
   date: string;
+  check: boolean;
   uid: string;  // ユーザーIDを追加
 }
 
@@ -24,13 +25,20 @@ const App = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  //userが変更されたとき（ログイン・ログアウト）に実行,ログイン時のみ処理
   useEffect(() => {
     if (user) {
       fetch(`${API}?uid=${user.uid}`)
         .then(res => res.json())
-        .then(data => setTodos(data));
+        .then(data => {
+          const updatedDate = data.map((todo: Todos) => ({
+            ...todo,check: todo.check ?? false
+          }));
+          setTodos(updatedDate)
+        });
     }
   }, [user]);
+
 
   const handleClick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,13 +46,16 @@ const App = () => {
       alert('Googleログインしてください');
       return;
     }
+    //未ログインの場合、アラート表示して処理中断。
     if (text && date) {
-      const newTodo = { text, date, uid: user.uid };
+      const newTodo = { text, date,check: false, uid: user.uid };
+      //入力欄の内容をサーバー（API/JSON Server）に送信
       fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTodo)
       })
+        //新タスクを、画面のリスト（todos）に即追加
         .then(res => res.json())
         .then(data => setTodos([...todos, data]));
       setText('');
@@ -54,12 +65,13 @@ const App = () => {
     }
   };
 
+  //選択したid以外のtodosを表示
   const handleDelete = (id?: number) => {
     fetch(`${API}/${id}`, { method: 'DELETE' })
       .then(() => setTodos(todos.filter(todo => todo.id !== id)));
   };
 
-  // ソート処理
+  // ソート処理（データ（todos配列）の順番を並べ替える）
   const sortedTodos = [...todos];
   if (sortOrder === 'dateAsc') {
     sortedTodos.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -67,15 +79,47 @@ const App = () => {
     sortedTodos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
+  //checkで状態を更新
+  const handleCheck = (id: number, checked: boolean) => {
+    const updatedTodos = todos.map(todo => {
+      if (todo.id === id) {
+        // idが一致した場合のみcheckを更新
+        return { ...todo, check: checked };
+      } else {
+        // 一致しない場合はそのまま
+        return todo;
+      }
+    });
+    setTodos(updatedTodos);
+
+    //PUTでcheckのみ更新
+    fetch(`${API}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ check: checked })  // 更新するプロパティだけ送信
+    });
+  };
+  
+  
+  
+
   return (
     <Container fluid className='container'>
-      <h1 className='text-center mt-3'>タスク管理</h1>
-
       {/* ログイン・ログアウト切り替え */}
       {!user ? (
-        <div className='text-center mt-3'><Button onClick={signInWithGoogle} >Googleでログイン</Button></div>
+        //未ログイン時
+        <div className='d-flex justify-content-center align-items-center min-vh-100'>
+          <div className='text-center'>
+            <h1 className='mb-3 fw-bold'>タスク管理アプリ</h1> {/* 下に余白を追加（mb-3） */}
+            <Button onClick={signInWithGoogle}>
+              <i className="bi bi-google me-1"></i>ログイン</Button>
+          </div>
+        </div>
+
       ) : (
+        //ログイン時
         <>
+          <h1 className='text-center mt-3'>タスク管理アプリ</h1>
           <div className='d-flex justify-content-between align-items-center'>
             <p className='mb-0'>こんにちは、{user.displayName}さん！</p>
             <Button onClick={logout}>
@@ -112,6 +156,7 @@ const App = () => {
 
               return (
                 <div key={todo.id} className='todoBox shadow'>
+                   <input type="checkbox" checked={todo.check} onChange={(e) => handleCheck(todo.id!,e.target.checked)}/>
                   <div className='my-1 mx-1'>{todo.text}</div>
                   <InputGroup className='d-flex justify-content-between align-items-center'>
                     <div>
