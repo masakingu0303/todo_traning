@@ -32,7 +32,7 @@ const App = () => {
         .then(res => res.json())
         .then(data => {
           const updatedDate = data.map((todo: Todos) => ({
-            ...todo,check: todo.check ?? false
+            ...todo, check: todo.check ?? false
           }));
           setTodos(updatedDate)
         });
@@ -48,7 +48,7 @@ const App = () => {
     }
     //未ログインの場合、アラート表示して処理中断。
     if (text && date) {
-      const newTodo = { text, date,check: false, uid: user.uid };
+      const newTodo = { text, date, check: false, uid: user.uid };
       //入力欄の内容をサーバー（API/JSON Server）に送信
       fetch(API, {
         method: 'POST',
@@ -98,10 +98,11 @@ const App = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ check: checked })  // 更新するプロパティだけ送信
     });
+
   };
-  
-  
-  
+
+
+
 
   return (
     <Container fluid className='container'>
@@ -121,7 +122,7 @@ const App = () => {
         <>
           <h1 className='text-center mt-3'>タスク管理アプリ</h1>
           <div className='d-flex justify-content-between align-items-center'>
-            <p className='mb-0'>こんにちは、{user.displayName}さん！</p>
+            <p className='mb-0'>{user.displayName}のアカウント</p>
             <Button onClick={logout}>
               <i className="bi bi-box-arrow-right me-1"></i>ログアウト
             </Button>
@@ -135,28 +136,37 @@ const App = () => {
             </InputGroup>
           </div>
 
-          <div className='my-2'>
+          <div className='my-2 text-center'>
             <Button onClick={() => setSortOrder('added')} variant={sortOrder === 'added' ? 'primary' : 'secondary'}>追加順</Button>{' '}
             <Button onClick={() => setSortOrder('dateAsc')} variant={sortOrder === 'dateAsc' ? 'primary' : 'secondary'}>日付昇順</Button>{' '}
             <Button onClick={() => setSortOrder('dateDesc')} variant={sortOrder === 'dateDesc' ? 'primary' : 'secondary'}>日付降順</Button>
           </div>
 
-          <div className='py-3 px-3'>
-            <h2>タスク - 納期 - 進捗 - 現在{today.getMonth() + 1}月{today.getDate()}日</h2>
+          <div className='p-3'>
+            <h2 className='text-center'>現在{today.getMonth() + 1}月{today.getDate()}日</h2>
             {sortedTodos.map((todo) => {
               const todoDate = new Date(todo.date);
               todoDate.setHours(0, 0, 0, 0);
               const diffTime = todoDate.getTime() - today.getTime();
               const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-              let message = diffDays > 0 ? `残り${diffDays}日` : '期限切れ';
+              let message = '';
+              if (todo.check) {
+                message = '完了';
+              } else if (diffDays > 0 ) {
+                message = `残り${diffDays}日`;
+              } else {
+                message = '期限切れ';
+              }
+              
+
               let messageColor = 'text-dark';
               if (diffDays < 0) messageColor = 'text-danger';
               else if (diffDays < 3) messageColor = 'text-warning';
 
               return (
                 <div key={todo.id} className='todoBox shadow'>
-                   <input type="checkbox" checked={todo.check} onChange={(e) => handleCheck(todo.id!,e.target.checked)}/>
+                  <input type="checkbox" checked={todo.check} onChange={(e) => handleCheck(todo.id!, e.target.checked)} />
                   <div className='my-1 mx-1'>{todo.text}</div>
                   <InputGroup className='d-flex justify-content-between align-items-center'>
                     <div>
